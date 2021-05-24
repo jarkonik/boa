@@ -16,7 +16,7 @@ use crate::syntax::lexer::{Error as LexError, InputElement, TokenKind};
 use crate::{
     syntax::{
         ast::{
-            node::{Assign, BinOp, Node},
+            node::{Assign, BinOp, Node, NodeKind},
             Keyword, Punctuator,
         },
         parser::{AllowAwait, AllowIn, AllowYield, Cursor, ParseError, ParseResult, TokenParser},
@@ -96,7 +96,7 @@ where
                             self.allow_await,
                         )
                         .parse(cursor)
-                        .map(Node::ArrowFunctionDecl);
+                        .map(NodeKind::ArrowFunctionDecl);
                     }
                 }
             }
@@ -116,7 +116,7 @@ where
                                         self.allow_await,
                                     )
                                     .parse(cursor)
-                                    .map(Node::ArrowFunctionDecl);
+                                    .map(NodeKind::ArrowFunctionDecl);
                                 }
                             }
                         }
@@ -127,7 +127,7 @@ where
                                 self.allow_await,
                             )
                             .parse(cursor)
-                            .map(Node::ArrowFunctionDecl);
+                            .map(NodeKind::ArrowFunctionDecl);
                         }
                         TokenKind::Identifier(_) => {
                             if let Some(t) = cursor.peek(2)? {
@@ -140,7 +140,7 @@ where
                                             self.allow_await,
                                         )
                                         .parse(cursor)
-                                        .map(Node::ArrowFunctionDecl);
+                                        .map(NodeKind::ArrowFunctionDecl);
                                     }
                                     TokenKind::Punctuator(Punctuator::CloseParen) => {
                                         // Need to check if the token after the close paren is an arrow, if so then this is an ArrowFunction
@@ -154,7 +154,7 @@ where
                                                     self.allow_await,
                                                 )
                                                 .parse(cursor)
-                                                .map(Node::ArrowFunctionDecl);
+                                                .map(NodeKind::ArrowFunctionDecl);
                                             }
                                         }
                                     }
@@ -181,7 +181,7 @@ where
             match tok.kind() {
                 TokenKind::Punctuator(Punctuator::Assign) => {
                     cursor.next()?.expect("= token vanished"); // Consume the token.
-                    if is_assignable(&lhs) {
+                    if lhs.kind().is_assignable() {
                         lhs = Assign::new(lhs, self.parse(cursor)?).into();
                     } else {
                         return Err(ParseError::lex(LexError::Syntax(
@@ -192,7 +192,7 @@ where
                 }
                 TokenKind::Punctuator(p) if p.as_binop().is_some() && p != &Punctuator::Comma => {
                     cursor.next()?.expect("token vanished"); // Consume the token.
-                    if is_assignable(&lhs) {
+                    if lhs.kind().is_assignable() {
                         let binop = p.as_binop().expect("binop disappeared");
                         let expr = self.parse(cursor)?;
 
@@ -210,20 +210,4 @@ where
 
         Ok(lhs)
     }
-}
-
-/// Returns true if as per spec[spec] the node can be assigned a value.
-///
-/// [spec]: https://tc39.es/ecma262/#sec-assignment-operators-static-semantics-early-errors
-#[inline]
-pub(crate) fn is_assignable(node: &Node) -> bool {
-    matches!(
-        node,
-        Node::GetConstField(_)
-            | Node::GetField(_)
-            | Node::Assign(_)
-            | Node::Call(_)
-            | Node::Identifier(_)
-            | Node::Object(_)
-    )
 }

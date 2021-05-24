@@ -465,15 +465,14 @@ impl Context {
     }
 
     /// Utility to create a function Value for Function Declarations, Arrow Functions or Function Expressions
-    pub(crate) fn create_function<P, B>(
+    pub(crate) fn create_function<P>(
         &mut self,
         params: P,
-        body: B,
+        body: StatementList,
         flags: FunctionFlags,
     ) -> Result<Value>
     where
         P: Into<Box<[FormalParameter]>>,
-        B: Into<StatementList>,
     {
         let function_prototype: Value =
             self.standard_objects().function_object().prototype().into();

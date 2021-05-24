@@ -5,6 +5,8 @@ use std::{cmp::Ordering, fmt, num::NonZeroU32};
 #[cfg(feature = "deser")]
 use serde::{Deserialize, Serialize};
 
+use crate::gc::{empty_trace, Finalize, Trace};
+
 /// A position in the JavaScript source code.
 ///
 /// Stores both the column number and the line number.
@@ -15,12 +17,16 @@ use serde::{Deserialize, Serialize};
 /// ## Similar Implementations
 /// [V8: Location](https://cs.chromium.org/chromium/src/v8/src/parsing/scanner.h?type=cs&q=isValid+Location&g=0&l=216)
 #[cfg_attr(feature = "deser", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Finalize)]
 pub struct Position {
     /// Line number.
     line_number: NonZeroU32,
     /// Column number.
     column_number: NonZeroU32,
+}
+
+unsafe impl Trace for Position {
+    empty_trace!();
 }
 
 impl Position {
@@ -57,10 +63,14 @@ impl fmt::Display for Position {
 ///
 /// Stores a start position and an end position.
 #[cfg_attr(feature = "deser", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Finalize)]
 pub struct Span {
     start: Position,
     end: Position,
+}
+
+unsafe impl Trace for Span {
+    empty_trace!();
 }
 
 impl Span {
